@@ -1,19 +1,19 @@
-# Acla Think
+# Atlas Think
 
-**Acla** is a virtual assistant built in Scratch, created by **NC_1320**. You know Acla, but introducing... ***[Acla Think!](https://nc1320.github.io/ACLAthink/)***
+**Atlas** is a virtual assistant built in Scratch, created by **NC_1320**. You know Acla, but introducing... ***[Atlas Think!](https://nc1320.github.io/AClAthink/)***
 
 ---
 
-## ACLA Versions:
+## ATLAS Versions:
 
-### [Acla Classic](https://scratch.mit.edu/projects/1145309837/)
+### [Atlas Classic](https://scratch.mit.edu/projects/1145309837/)
 The original version of Acla.
 
 - Built-in features including **translation**, **maths** and **colours**
 - Fixed, pre-written responses
 - Dedicated **Help**, **Exit** and **Stop** controls
 
-### Acla Think *(Beta)*
+### Atlas Think *(Beta)*
 A new version of Acla that uses **AI** to answer questions.
 
 - **AI-generated replies**, supporting a far wider range of questions
@@ -22,17 +22,17 @@ A new version of Acla that uses **AI** to answer questions.
 
 ---
 
-## Running Acla Think
+## Running Atlas Think
 
-Acla Think runs in [TurboWarp](https://turbowarp.org), a free Scratch editor that works in any modern web browser.
+Atlas Think runs in [TurboWarp](https://turbowarp.org), a free Scratch editor that works in any modern web browser.
 
 1. Download the latest `.sb3` file from the **Releases** page.
 2. Go to [turbowarp.org](https://turbowarp.org).
 3. Select **File**, then **Load from your computer**.
 4. Choose the downloaded `.sb3` file.
-5. If TurboWarp asks for permission to load the custom extension, select **Allow**. The *Acla AI* extension is built into the project file.
+5. If TurboWarp asks for permission to load the custom extension, select **Allow**. The *Atlas AI* extension is built into the project file.
 6. Click the **green flag** to start.
-7. When Acla asks *"What do you want to ask me?"*, type a question and press **Enter**.
+7. When Atlas asks *"What do you want to ask me?"*, type a question and press **Enter**.
 
 ---
 
@@ -46,14 +46,14 @@ Acla Think runs in [TurboWarp](https://turbowarp.org), a free Scratch editor tha
 ## Troubleshooting
 
 - **No reply or an error message:** check the internet connection, then click the stop button and the green flag to restart the project.
-- **Still no reply:** try going to [the Acla AI space](https://huggingface.co/spaces/helloperson123/idk) and clicking **Restart**.
+- **Still no reply:** try going to [the Atlas AI space](https://huggingface.co/spaces/helloperson123/idk) and clicking **Restart**.
 - **Extension prompt does not appear:** reload the page and load the project file again.
 
 ---
 
 ## Status
 
-> **Note:** Acla Think is currently in **beta**. Some features may be incomplete or subject to change.
+> **Note:** Atlas Think is currently in **beta**. Some features may be incomplete or subject to change.
 
 ---
 
