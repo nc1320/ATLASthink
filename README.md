@@ -14,7 +14,7 @@ The original version of Atlas.
 - Dedicated **Help**, **Exit** and **Stop** controls
 
 ### Atlas Think *(Beta)*
-A new version of Acla that uses **AI** to answer questions.
+A new version of Atlas that uses **AI** to answer questions.
 
 - **AI-generated replies**, supporting a far wider range of questions
 - **Conversation memory**, allowing follow-up questions that build on earlier messages
