@@ -7,7 +7,7 @@
 ## ATLAS Versions:
 
 ### [Atlas Classic](https://scratch.mit.edu/projects/1145309837/)
-The original version of Acla.
+The original version of Atlas.
 
 - Built-in features including **translation**, **maths** and **colours**
 - Fixed, pre-written responses
