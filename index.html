@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atlas Think</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#02040a; --panel:#070b14; --panel2:#0b111d; --line:#1a2336; --line2:#263149;
+  --text:#e6ebf5; --mute:#8591a9; --silver:#c9d3e6; --silver-d:#5b6578;
+  --cyan:#00b0ff; --cyan-s:rgba(0,176,255,.14); --cyan-g:rgba(0,176,255,.45);
+  --font:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font:15px/1.6 var(--font);overflow:hidden;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.app{display:grid;grid-template-columns:284px 1fr;height:100%}
+/* sidebar */
+.side{background:linear-gradient(180deg,var(--panel),#04070d);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 12px;min-height:0}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 8px 16px}
+.brand svg{width:28px;height:34px;filter:drop-shadow(0 0 8px var(--cyan-g))}
+.brand b{font-size:17px;letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(180deg,#e8eefb,#8e9ab1);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand small{display:block;color:var(--cyan);font-size:10px;letter-spacing:.3em;text-transform:uppercase;margin-top:-4px}
+.newchat{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border-radius:12px;border:1px solid var(--line2);background:linear-gradient(180deg,#0e1626,#09101c);font-weight:500;transition:.2s}
+.newchat:hover{border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan-s),0 0 22px -6px var(--cyan-g)}
+.newchat i{font-style:normal;color:var(--cyan);font-size:18px;line-height:1}
+.label{color:var(--mute);font-size:11px;letter-spacing:.16em;text-transform:uppercase;padding:20px 10px 8px}
+.hist{flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:2px}
+.hist::-webkit-scrollbar,.scroll::-webkit-scrollbar{width:8px}
+.hist::-webkit-scrollbar-thumb,.scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px}
+.item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;color:var(--mute);text-align:left;width:100%;transition:.15s}
+.item span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.item:hover{background:var(--panel2);color:var(--text)}
+.item.on{background:var(--cyan-s);color:var(--text);box-shadow:inset 2px 0 var(--cyan)}
+.item .x{opacity:0;color:var(--mute);padding:0 4px}
+.item:hover .x{opacity:1}.item .x:hover{color:#ff7a8a}
+.me{display:flex;align-items:center;gap:10px;padding:12px 8px 0;border-top:1px solid var(--line);margin-top:10px;color:var(--mute);font-size:13px}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(160deg,var(--silver),var(--silver-d));color:#05080f;font-weight:700;font-size:12px}
+/* main */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;
+  background:radial-gradient(900px 480px at 50% -8%,rgba(0,176,255,.10),transparent 70%),radial-gradient(700px 400px at 90% 110%,rgba(150,170,210,.06),transparent 70%),var(--bg)}
+.top{display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid rgba(38,49,73,.5);backdrop-filter:blur(8px)}
+.burger{display:none;font-size:20px;padding:2px 8px}
+.chip{display:flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid var(--line2);border-radius:99px;background:rgba(11,17,29,.7);font-size:13px;font-weight:500}
+.chip:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.chip em{font-style:normal;color:var(--mute);font-weight:400}
+.spacer{flex:1}
+.pill{font-size:12px;color:var(--mute);border:1px solid var(--line);padding:5px 11px;border-radius:99px}
+.pill{display:flex;align-items:center;gap:7px}
+.pill#ctxBtn:before{content:"";width:7px;height:7px;border-radius:50%;background:#4a5670}
+.pill#ctxBtn.on{color:var(--text);border-color:rgba(0,176,255,.4)}
+.pill#ctxBtn.on:before{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.pill:hover{color:var(--text);border-color:var(--line2)}
+.scroll{flex:1;overflow-y:auto;min-height:0}
+.wrap{max-width:780px;margin:0 auto;padding:28px 22px 12px}
+/* hero */
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:5vh 0 8px}
+.orb{width:104px;height:126px;animation:float 6s ease-in-out infinite,glow 4s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px)}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 14px rgba(0,176,255,.25))}50%{filter:drop-shadow(0 0 30px rgba(0,176,255,.6))}}
+.hero h1{font-size:clamp(26px,4vw,38px);font-weight:600;letter-spacing:-.02em;margin-top:26px;background:linear-gradient(180deg,#fff,#9eabc4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mute);margin-top:6px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:34px;width:100%}
+.card{text-align:left;padding:16px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(14,22,38,.8),rgba(8,13,22,.8));transition:.2s}
+.card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 10px 30px -14px var(--cyan-g)}
+.card i{font-style:normal;color:var(--cyan);font-size:16px}
+.card b{display:block;font-weight:500;margin:6px 0 2px}
+.card span{color:var(--mute);font-size:13px}
+/* messages */
+.msg{display:flex;gap:14px;margin:0 0 26px;animation:in .35s ease both}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+.msg .ico{flex:none;width:32px;height:32px;display:grid;place-items:center}
+.msg .ico svg{width:22px;height:27px;filter:drop-shadow(0 0 6px var(--cyan-g))}
+.msg.user{flex-direction:row-reverse}
+.msg.user .body{background:linear-gradient(160deg,#142039,#0d1628);border:1px solid var(--line2);padding:10px 16px;border-radius:18px 18px 4px 18px;max-width:80%}
+.msg.user .ico{display:none}
+.body{min-width:0;overflow-wrap:anywhere}
+.body p{margin:0 0 .8em}.body p:last-child{margin:0}
+.body ul{margin:0 0 .8em 1.2em}.body li{margin:.15em 0}.body li::marker{color:var(--cyan)}
+.body code{font-family:var(--mono);font-size:.88em;background:#0d1524;border:1px solid var(--line);padding:1px 6px;border-radius:6px;color:#9fdcff}
+.body pre{margin:.4em 0 .9em;background:#050912;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.body pre .h{display:flex;justify-content:space-between;padding:7px 14px;font-size:12px;color:var(--mute);background:#0a1020;border-bottom:1px solid var(--line)}
+.body pre .h button{color:var(--mute);font-size:12px}.body pre .h button:hover{color:var(--cyan)}
+.body pre code{display:block;border:0;background:none;padding:14px;overflow-x:auto;color:#cfe3f7;font-size:13px;line-height:1.55}
+.acts{display:flex;gap:4px;margin-top:8px;opacity:0;transition:.2s}
+.msg:hover .acts,.msg:last-child .acts{opacity:1}
+.acts button{font-size:12px;color:var(--mute);padding:4px 9px;border-radius:8px}
+.acts button:hover{background:var(--panel2);color:var(--text)}
+.think{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:14px;padding-top:5px}
+.think .r{width:16px;height:16px;border-radius:50%;border:2px solid var(--cyan);box-shadow:0 0 12px var(--cyan-g);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(.6);opacity:.4}}
+.caret:after{content:"";display:inline-block;width:7px;height:15px;margin-left:3px;background:var(--cyan);vertical-align:-2px;animation:blink 1s steps(2) infinite;box-shadow:0 0 8px var(--cyan)}
+@keyframes blink{50%{opacity:0}}
+/* composer */
+.dock{padding:6px 22px 18px}
+.box{max-width:780px;margin:0 auto;display:flex;align-items:flex-end;gap:10px;padding:10px 10px 10px 18px;border-radius:22px;border:1px solid var(--line2);background:rgba(9,14,25,.92);box-shadow:0 14px 50px -20px #000;transition:.2s}
+.box:focus-within{border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan-s),0 0 40px -12px var(--cyan-g)}
+textarea{flex:1;resize:none;background:none;border:0;outline:0;color:var(--text);font:inherit;max-height:180px;padding:7px 0;line-height:1.5}
+textarea::placeholder{color:#58647c}
+.send{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(160deg,#18c2ff,#0079d6);color:#021019;font-size:18px;font-weight:700;transition:.2s;flex:none}
+.send:disabled{background:var(--line);color:#4a5670;cursor:default}
+.send:not(:disabled):hover{box-shadow:0 0 22px var(--cyan-g);transform:scale(1.05)}
+.fine{text-align:center;color:#4f5b73;font-size:12px;margin-top:10px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:#0e1626;border:1px solid var(--line2);padding:8px 16px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:.3s;z-index:20}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.scrim{display:none}
+@media(max-width:820px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;inset:0 auto 0 0;width:290px;z-index:30;transform:translateX(-100%);transition:.3s;padding-top:calc(16px + env(safe-area-inset-top,0px))}
+  .side.open{transform:none}
+  .scrim.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:25}
+  .burger{display:block}.cards{grid-template-columns:1fr}.pill#clearBtn{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3dcef"/><stop offset="1" stop-color="#586175"/></linearGradient>
+<filter id="gl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<symbol id="logo" viewBox="0 0 100 120"><rect x="6" y="6" width="88" height="108" rx="44" fill="none" stroke="url(#sg)" stroke-width="5"/><circle cx="50" cy="48" r="17" fill="none" stroke="#00b0ff" stroke-width="5" filter="url(#gl)"/></symbol>
+</defs></svg>
+
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand"><svg><use href="#logo"/></svg><div><b>Atlas</b><small>Think</small></div></div>
+    <button class="newchat" id="newBtn"><i>+</i> New chat</button>
+    <div class="label">Recent</div>
+    <nav class="hist" id="hist"></nav>
+    <div class="me"><div class="av">You</div><div>Personal workspace</div></div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <header class="top">
+      <button class="burger" id="burger" aria-label="Menu">☰</button>
+      <div class="chip">Atlas Think <em>· reasoning</em></div>
+      <div class="spacer"></div>
+      <button class="pill on" id="ctxBtn" title="Send earlier messages so Atlas remembers the conversation"></button>
+      <button class="pill" id="clearBtn">Clear all chats</button>
+    </header>
+    <div class="scroll" id="scroll"><div class="wrap" id="wrap"></div></div>
+    <div class="dock">
+      <div class="box">
+        <textarea id="inp" rows="1" placeholder="Ask Atlas anything…" aria-label="Message Atlas"></textarea>
+        <button class="send" id="send" aria-label="Send" disabled>↑</button>
+      </div>
+      <div class="fine">Atlas can make mistakes. Check important information.</div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---- Atlas backend (Hugging Face Space) ------------------------------
+   The Space expects: POST /api/ask  {prompt: "CONTEXT OF PROMPT: <history> LATEST RESPONSE: <message>"}
+   and returns {reply}. History turns are written "User: ..." / "Acla: ..." because the
+   server splits on those exact names (see TURN_SPLIT in its app.py). */
+const ATLAS = {
+  url: 'https://helloperson123-idk.hf.space/api/ask',
+  botTag: 'Acla',          // change to 'Atlas' only after updating TURN_SPLIT in the Space
+  maxContext: 3000,        // the server keeps only the last 3000 characters of history
+  async respond(msgs, useContext){
+    const clean = msgs.filter(m => !m.err);
+    const latest = clean[clean.length - 1].text;
+    let hist = useContext ? clean.slice(0, -1).map(m => (m.role === 'user' ? 'User' : ATLAS.botTag) + ': ' + m.text).join(' ') : '';
+    if (hist.length > ATLAS.maxContext) hist = hist.slice(-ATLAS.maxContext);
+    const prompt = 'CONTEXT OF PROMPT: ' + hist + ' LATEST RESPONSE: ' + latest;
+    // One attempt, with its own timeout (Promise.race: AbortSignal can't cross some sandboxed previews)
+    const once = () => {
+      let t;
+      const timeout = new Promise((_, rej) => { t = setTimeout(() => rej(new Error('timed out')), 30000); });
+      const call = fetch(ATLAS.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) })
+        .then(r => { if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; } return r.json(); });
+      return Promise.race([call, timeout]).finally(() => clearTimeout(t));
+    };
+    // A sleeping Space answers without CORS headers (shows up as "Failed to fetch"), so poke it awake and retry
+    let last;
+    for (let i = 0; i < 6; i++) {
+      try { const j = await once(); return j.reply || 'I could not generate a response.'; }
+      catch (e) {
+        last = e;
+        if (e.status && e.status >= 400 && e.status < 500) break;
+        if (i === 0) fetch(new URL(ATLAS.url).origin + '/', { mode: 'no-cors' }).catch(() => {});
+        await new Promise(r => setTimeout(r, 7000));
+      }
+    }
+    throw last;
+  }
+};
+
+const $ = id => document.getElementById(id);
+const LOGO = '<svg><use href="#logo"/></svg>';
+let chats = [], cur = null, busy = false, timer = null;
+let ctxOn = true;
+try { ctxOn = localStorage.getItem('atlas.ctx') !== '0'; } catch (e) {}
+
+try { chats = JSON.parse(localStorage.getItem('atlas.chats') || '[]'); } catch (e) {}
+const save = () => { try { localStorage.setItem('atlas.chats', JSON.stringify(chats)); } catch (e) {} };
+const uid = () => Math.random().toString(36).slice(2, 9);
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 1600); }
+
+/* lightweight markdown */
+function md(src){
+  const blocks = [];
+  src = src.replace(/```(\w*)\n?([\s\S]*?)(```|$)/g, (_, lang, code) => {
+    blocks.push('<pre><div class="h"><span>' + (lang || 'code') + '</span><button data-copy>Copy</button></div><code>' + esc(code.replace(/\n$/, '')) + '</code></pre>');
+    return '\u0000' + (blocks.length - 1) + '\u0000';
+  });
+  const inline = t => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  return src.split(/\n{2,}/).map(par => {
+    const lines = par.split('\n');
+    if (lines.every(l => /^\s*[-*] /.test(l))) return '<ul>' + lines.map(l => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>';
+    return '<p>' + inline(par).replace(/\n/g, '<br>') + '</p>';
+  }).join('').replace(/\u0000(\d+)\u0000/g, (_, i) => blocks[i]).replace(/<p>(<pre>[\s\S]*?<\/pre>)<\/p>/g, '$1');
+}
+
+/* rendering */
+function renderHist(){
+  $('hist').innerHTML = '';
+  chats.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'item' + (c.id === cur ? ' on' : '');
+    b.innerHTML = '<span>' + esc(c.title) + '</span><b class="x" title="Delete">✕</b>';
+    b.onclick = e => { if (e.target.classList.contains('x')) del(c.id); else open(c.id); };
+    $('hist').appendChild(b);
+  });
+  if (!chats.length) $('hist').innerHTML = '<div class="item" style="cursor:default">No conversations yet</div>';
+}
+
+function hero(){
+  const prompts = [
+    ['💬','Explain something','Break down a tricky idea simply','Explain how neural networks learn, like I’m new to it.'],
+    ['🧑‍💻','Debug my code','Find the bug and fix it together','Help me debug some code.'],
+    ['📆','Plan my week','Turn a messy to-do list into a schedule','Help me plan my week.'],
+    ['🧠','Tell me a fact about yourself','A fact about ATLAS','What does Atlas stand for?']
+  ];
+  $('wrap').innerHTML = '<div class="hero"><svg class="orb"><use href="#logo"/></svg><h1>How can Atlas help today?</h1><p>Think deeper. Ask anything.</p><div class="cards">' +
+    prompts.map((p, i) => '<button class="card" data-i="' + i + '"><i>' + p[0] + '</i><b>' + p[1] + '</b><span>' + p[2] + '</span></button>').join('') + '</div></div>';
+  $('wrap').querySelectorAll('.card').forEach(c => c.onclick = () => send(prompts[c.dataset.i][3]));
+}
+
+function msgEl(m, last){
+  const d = document.createElement('div');
+  d.className = 'msg ' + m.role;
+  if (m.role === 'user') d.innerHTML = '<div class="body">' + esc(m.text).replace(/\n/g, '<br>') + '</div>';
+  else d.innerHTML = '<div class="ico">' + LOGO + '</div><div class="body"><div class="txt">' + md(m.text) + '</div>' +
+    '<div class="acts"><button data-act="copy">Copy</button>' + (last ? '<button data-act="redo">Regenerate</button>' : '') + '</div></div>';
+  return d;
+}
+
+function render(){
+  const c = chats.find(x => x.id === cur);
+  renderHist();
+  if (!c || !c.msgs.length) return hero();
+  $('wrap').innerHTML = '';
+  c.msgs.forEach((m, i) => $('wrap').appendChild(msgEl(m, i === c.msgs.length - 1)));
+  bottom();
+}
+const bottom = () => { const s = $('scroll'); s.scrollTop = s.scrollHeight; };
+
+function open(id){ if (busy) return; cur = id; render(); $('side').classList.remove('open'); $('scrim').classList.remove('open'); }
+function newChat(){ if (busy) return; cur = null; render(); $('inp').focus(); $('side').classList.remove('open'); $('scrim').classList.remove('open'); }
+function del(id){ if (busy) return; chats = chats.filter(c => c.id !== id); if (cur === id) cur = null; save(); render(); }
+
+/* sending */
+async function send(text, regen){
+  text = (text || '').trim();
+  if (busy || (!text && !regen)) return;
+  let c = chats.find(x => x.id === cur);
+  if (!c){ c = { id: uid(), title: text.slice(0, 38) || 'New chat', msgs: [] }; chats.unshift(c); cur = c.id; }
+  if (!regen) c.msgs.push({ role: 'user', text });
+  save(); render();
+  $('inp').value = ''; grow(); setBtn();
+  busy = true; setBtn();
+
+  const row = document.createElement('div');
+  row.className = 'msg assistant';
+  row.innerHTML = '<div class="ico">' + LOGO + '</div><div class="body"><div class="think"><span class="r"></span><span>Thinking…</span></div></div>';
+  $('wrap').appendChild(row); bottom();
+
+  let reply, err = false;
+  const slow = setTimeout(() => { const t = row.querySelector('.think'); if (t) t.lastChild.textContent = 'Waking Atlas up, this can take a moment…'; }, 8000);
+  try {
+    reply = await ATLAS.respond(c.msgs.map(m => ({ role: m.role, text: m.text, err: m.err })), ctxOn);
+  } catch (e) {
+    err = true;
+    reply = 'I couldn’t reach Atlas (' + e.message + '). The Space may be stopped or rebuilding: check helloperson123-idk.hf.space/docs.';
+  }
+  clearTimeout(slow);
+
+  const body = row.querySelector('.body');
+  body.innerHTML = '<div class="txt caret"></div>';
+  const txt = body.querySelector('.txt');
+  let i = 0;
+  timer = setInterval(() => {
+    i += 3 + Math.floor(Math.random() * 4);
+    txt.innerHTML = md(reply.slice(0, i));
+    if (i < reply.length) txt.classList.add('caret'); 
+    bottom();
+    if (i >= reply.length) finish(c, reply, err);
+  }, 18);
+}
+
+function finish(c, reply, err){
+  clearInterval(timer); timer = null;
+  c.msgs.push({ role: 'assistant', text: reply, err: err || undefined });
+  busy = false; save(); render(); setBtn(); $('inp').focus();
+}
+
+function stop(){
+  if (!busy || !timer) return;
+  const c = chats.find(x => x.id === cur);
+  const txt = $('wrap').querySelector('.msg:last-child .txt');
+  finish(c, txt ? txt.textContent : '…', false);
+}
+
+/* composer */
+function grow(){ const t = $('inp'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 180) + 'px'; }
+function setBtn(){
+  const b = $('send');
+  b.disabled = !busy && !$('inp').value.trim();
+  b.textContent = busy ? '■' : '↑';
+}
+$('inp').addEventListener('input', () => { grow(); setBtn(); });
+$('inp').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send($('inp').value); } });
+$('send').onclick = () => busy ? stop() : send($('inp').value);
+function setCtx(){ const b = $('ctxBtn'); b.classList.toggle('on', ctxOn); b.textContent = 'Context: ' + (ctxOn ? 'On' : 'Off'); }
+$('ctxBtn').onclick = () => { ctxOn = !ctxOn; try { localStorage.setItem('atlas.ctx', ctxOn ? '1' : '0'); } catch (e) {} setCtx(); toast(ctxOn ? 'Atlas will remember this chat' : 'Each message is now standalone'); };
+setCtx();
+$('newBtn').onclick = newChat;
+$('clearBtn').onclick = () => { if (!busy && chats.length && confirm('Delete all conversations?')){ chats = []; cur = null; save(); render(); } };
+$('burger').onclick = () => { $('side').classList.add('open'); $('scrim').classList.add('open'); };
+$('scrim').onclick = () => { $('side').classList.remove('open'); $('scrim').classList.remove('open'); };
+
+$('wrap').addEventListener('click', e => {
+  const copy = t => navigator.clipboard.writeText(t).then(() => toast('Copied'), () => toast('Copy failed'));
+  if (e.target.dataset.copy !== undefined) return copy(e.target.closest('pre').querySelector('code').textContent);
+  const a = e.target.dataset.act;
+  if (a === 'copy') copy(e.target.closest('.body').querySelector('.txt').textContent);
+  if (a === 'redo'){
+    const c = chats.find(x => x.id === cur);
+    if (c && c.msgs.length && c.msgs[c.msgs.length - 1].role === 'assistant'){ c.msgs.pop(); send('', true); }
+  }
+});
+
+render();
+</script>
+</body>
+</html>
