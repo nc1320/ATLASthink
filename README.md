@@ -9,7 +9,7 @@
 ### [Atlas Classic](https://scratch.mit.edu/projects/1145309837/)
 The original version of Atlas.
 
-- Built-in features including **translation**, **maths** and **colours**
+- Built-in features including **translation**, **music** and **mathematics**
 - Fixed, pre-written responses
 - Dedicated **Help**, **Exit** and **Stop** controls
 
