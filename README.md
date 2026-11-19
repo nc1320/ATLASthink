@@ -46,7 +46,7 @@ Atlas Think runs in [TurboWarp](https://turbowarp.org), a free Scratch editor th
 ## Troubleshooting
 
 - **No reply or an error message:** check the internet connection, then click the stop button and the green flag to restart the project.
-- **Still no reply:** try going to [the Atlas AI space](https://huggingface.co/spaces/helloperson123/idk) and clicking **Restart**.
+- **Still no reply:** try going to [the TW Atlas AI space](https://huggingface.co/spaces/helloperson123/idk) (if you are using the `.sb3` file, or if you are not using the `.sb3`, go to the [other HF Space](https://huggingface.co/spaces/helloperson123/AtlasThinkApp) and click **Restart**.
 - **Extension prompt does not appear:** reload the page and load the project file again.
 
 ---
