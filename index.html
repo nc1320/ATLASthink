@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" type="image/png" href="icon.png">
-<link rel="apple-touch-icon" href="icon.png">
+  
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Atlas Think</title>
+<link rel="icon" type="image/png" href="icon.png">
+
+<title>Atlas</title>
 <style>
 :root{
   color-scheme:dark;
@@ -158,40 +159,90 @@ textarea::placeholder{color:#58647c}
 <div class="toast" id="toast"></div>
 
 <script>
-/* ---- Atlas backend (Hugging Face Space) ------------------------------
-   The Space expects: POST /api/ask  {prompt: "CONTEXT OF PROMPT: <history> LATEST RESPONSE: <message>"}
-   and returns {reply}. History turns are written "User: ..." / "Acla: ..." because the
-   server splits on those exact names (see TURN_SPLIT in its app.py). */
+/* ---- Atlas backend (Hugging Face Space: Gradio + ZeroGPU) ------------
+   Calls the Space's Gradio API (api_name "chat"):
+     POST <space>/gradio_api/call/chat   {data:[ "<JSON list of {role, content}>" ]}  ->  {event_id}
+     GET  <space>/gradio_api/call/chat/<event_id>  ->  Server-Sent Events: generating / complete / error
+   Each event carries the reply so far, so the text streams into the page as it is generated. */
+const withTimeout = (p, ms) => {
+  let t;
+  const timeout = new Promise((_, rej) => { t = setTimeout(() => rej(new Error('timed out')), ms); });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(t));
+};
 const ATLAS = {
-  url: 'https://helloperson123-idk.hf.space/api/ask',
-  botTag: 'Acla',          // change to 'Atlas' only after updating TURN_SPLIT in the Space
-  maxContext: 3000,        // the server keeps only the last 3000 characters of history
-  async respond(msgs, useContext){
-    const clean = msgs.filter(m => !m.err);
-    const latest = clean[clean.length - 1].text;
-    let hist = useContext ? clean.slice(0, -1).map(m => (m.role === 'user' ? 'User' : ATLAS.botTag) + ': ' + m.text).join(' ') : '';
-    if (hist.length > ATLAS.maxContext) hist = hist.slice(-ATLAS.maxContext);
-    const prompt = 'CONTEXT OF PROMPT: ' + hist + ' LATEST RESPONSE: ' + latest;
-    // One attempt, with its own timeout (Promise.race: AbortSignal can't cross some sandboxed previews)
-    const once = () => {
-      let t;
-      const timeout = new Promise((_, rej) => { t = setTimeout(() => rej(new Error('timed out')), 30000); });
-      const call = fetch(ATLAS.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) })
-        .then(r => { if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; } return r.json(); });
-      return Promise.race([call, timeout]).finally(() => clearTimeout(t));
-    };
+  space: 'https://helloperson123-atlasthinkapp.hf.space',  // your Space's URL (owner-spacename.hf.space, lowercase)
+  api: 'chat',
+  maxContext: 12000,       // characters of chat history sent along; the oldest turns are dropped first
+  prefix: null,            // '/gradio_api' (Gradio 5+) or '' (Gradio 4), detected on the first call
+  cancelled: false,
+  reader: null,
+  cancel(){ this.cancelled = true; try { if (this.reader) this.reader.cancel(); } catch (e) {} },
+  async post(prefix, payload){
+    const r = await withTimeout(fetch(this.space + prefix + '/call/' + this.api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload }), 30000);
+    if (!r.ok){ const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+    return (await r.json()).event_id;
+  },
+  async start(payload){
+    for (const p of this.prefix === null ? ['/gradio_api', ''] : [this.prefix]){
+      try { const id = await this.post(p, payload); this.prefix = p; return id; }
+      catch (e){ if (e.status !== 404) throw e; }
+    }
+    const e = new Error('HTTP 404'); e.status = 404; throw e;
+  },
+  async respond(msgs, useContext, onText){
+    this.cancelled = false; this.reader = null;
+    const clean = msgs.filter(m => !m.err).map(m => ({ role: m.role, content: m.text }));
+    const hist = useContext ? clean : clean.slice(-1);
+    let size = hist.reduce((n, m) => n + m.content.length, 0);
+    while (hist.length > 1 && size > this.maxContext) size -= hist.shift().content.length;
+    const payload = JSON.stringify({ data: [JSON.stringify(hist)] });
+
     // A sleeping Space answers without CORS headers (shows up as "Failed to fetch"), so poke it awake and retry
-    let last;
-    for (let i = 0; i < 6; i++) {
-      try { const j = await once(); return j.reply || 'I could not generate a response.'; }
-      catch (e) {
+    let id, last;
+    for (let i = 0; i < 6 && !id; i++){
+      if (this.cancelled) return '';
+      try { id = await this.start(payload); }
+      catch (e){
         last = e;
-        if (e.status && e.status >= 400 && e.status < 500) break;
-        if (i === 0) fetch(new URL(ATLAS.url).origin + '/', { mode: 'no-cors' }).catch(() => {});
+        if (e.status && e.status >= 400 && e.status < 500) throw e;
+        if (i === 0) fetch(this.space + '/', { mode: 'no-cors' }).catch(() => {});
         await new Promise(r => setTimeout(r, 7000));
       }
     }
-    throw last;
+    if (!id) throw last;
+    if (this.cancelled) return '';
+
+    const res = await withTimeout(fetch(this.space + this.prefix + '/call/' + this.api + '/' + id), 30000);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const reader = res.body.getReader();
+    this.reader = reader;
+    const dec = new TextDecoder();
+    let buf = '', text = '';
+    for (;;){
+      const { done, value } = await withTimeout(reader.read(), 120000);
+      if (done) break;
+      buf += dec.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+      let i;
+      while ((i = buf.indexOf('\n\n')) >= 0){
+        const block = buf.slice(0, i); buf = buf.slice(i + 2);
+        let ev = 'message', data = '';
+        for (const line of block.split('\n')){
+          if (line.startsWith('event:')) ev = line.slice(6).trim();
+          else if (line.startsWith('data:')) data += line.slice(5).trim();
+        }
+        if (ev === 'error'){
+          let m = ''; try { m = JSON.parse(data); } catch (e) {}
+          throw new Error(typeof m === 'string' && m ? m : 'the Space returned an error');
+        }
+        if (ev === 'generating' || ev === 'complete'){
+          let arr; try { arr = JSON.parse(data); } catch (e) { continue; }
+          const t = Array.isArray(arr) ? arr[0] : arr;
+          if (typeof t === 'string'){ text = t; if (onText) onText(t); }
+          if (ev === 'complete') return text;
+        }
+      }
+    }
+    return text;
   }
 };
 
@@ -287,41 +338,36 @@ async function send(text, regen){
   row.innerHTML = '<div class="ico">' + LOGO + '</div><div class="body"><div class="think"><span class="r"></span><span>Thinking…</span></div></div>';
   $('wrap').appendChild(row); bottom();
 
-  let reply, err = false;
+  const body = row.querySelector('.body');
+  let txt = null, reply = '', err = false;
   const slow = setTimeout(() => { const t = row.querySelector('.think'); if (t) t.lastChild.textContent = 'Waking Atlas up, this can take a moment…'; }, 8000);
+  const onText = t => {
+    if (!txt){ clearTimeout(slow); body.innerHTML = '<div class="txt caret"></div>'; txt = body.querySelector('.txt'); }
+    reply = t;
+    txt.innerHTML = md(t);
+    bottom();
+  };
   try {
-    reply = await ATLAS.respond(c.msgs.map(m => ({ role: m.role, text: m.text, err: m.err })), ctxOn);
+    reply = await ATLAS.respond(c.msgs.map(m => ({ role: m.role, text: m.text, err: m.err })), ctxOn, onText);
   } catch (e) {
-    err = true;
-    reply = 'I couldn’t reach Atlas (' + e.message + '). The Space may be stopped or rebuilding: check helloperson123-idk.hf.space/docs.';
+    if (reply) reply += ' …';
+    else {
+      err = true;
+      reply = /quota/i.test(e.message)
+        ? 'Atlas has used up its free GPU time for now (' + e.message + '). Try again later.'
+        : 'I couldn’t reach Atlas (' + e.message + '). The Space may be stopped or rebuilding, or today’s free GPU time may be used up.';
+    }
   }
   clearTimeout(slow);
-
-  const body = row.querySelector('.body');
-  body.innerHTML = '<div class="txt caret"></div>';
-  const txt = body.querySelector('.txt');
-  let i = 0;
-  timer = setInterval(() => {
-    i += 3 + Math.floor(Math.random() * 4);
-    txt.innerHTML = md(reply.slice(0, i));
-    if (i < reply.length) txt.classList.add('caret'); 
-    bottom();
-    if (i >= reply.length) finish(c, reply, err);
-  }, 18);
+  finish(c, reply || (ATLAS.cancelled ? '(stopped)' : 'I could not generate a response.'), err);
 }
 
 function finish(c, reply, err){
-  clearInterval(timer); timer = null;
   c.msgs.push({ role: 'assistant', text: reply, err: err || undefined });
   busy = false; save(); render(); setBtn(); $('inp').focus();
 }
 
-function stop(){
-  if (!busy || !timer) return;
-  const c = chats.find(x => x.id === cur);
-  const txt = $('wrap').querySelector('.msg:last-child .txt');
-  finish(c, txt ? txt.textContent : '…', false);
-}
+function stop(){ if (busy) ATLAS.cancel(); }
 
 /* composer */
 function grow(){ const t = $('inp'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 180) + 'px'; }
