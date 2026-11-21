@@ -7,6 +7,13 @@ NC_1320
 
 
 
+
+
+
+
+
+
+
 **Atlas** is a virtual assistant built in Scratch, created by **NC_1320**. You know Atlas, but introducing... ***[Atlas Think!](https://nc1320.github.io/ATLASthink/)***
 
 ---
